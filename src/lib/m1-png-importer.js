@@ -30,35 +30,34 @@ export class M1PNGImporter {
             variaMissile: [0x30, 0x27]
         };
 
-        // Extract palettes if PNG is 32px tall
-        if (canvas.height === 32) {
-            // Sample center of each 8x8 palette block
-            const paletteY = 24 + 4; // Center of palette row
+        // Extract palettes if PNG is 25px tall (new format) or 32px tall (old format)
+        if (canvas.height === 25 || canvas.height === 32) {
+            const paletteY = 24; // Palette row
 
-            // Base palette has 4 colors (0-3)
+            // Base palette has 4 colors (indices 0-3)
             palettes.base = [
-                this.sampleNESColor(imageData, 4, paletteY),
-                this.sampleNESColor(imageData, 12, paletteY),
-                this.sampleNESColor(imageData, 20, paletteY),
-                this.sampleNESColor(imageData, 28, paletteY)
+                this.sampleNESColor(imageData, 0, paletteY),
+                this.sampleNESColor(imageData, 1, paletteY),
+                this.sampleNESColor(imageData, 2, paletteY),
+                this.sampleNESColor(imageData, 3, paletteY)
             ].slice(1); // Remove background color for storage
 
-            // Other palettes have 3 colors (0, 2, 3)
+            // Other palettes have 4 colors displayed (0, 1, 2, 3) but only store 2, 3
             palettes.normal = [
-                this.sampleNESColor(imageData, 36, paletteY),
-                this.sampleNESColor(imageData, 44, paletteY)
+                this.sampleNESColor(imageData, 6, paletteY),   // index 2
+                this.sampleNESColor(imageData, 7, paletteY)    // index 3
             ];
             palettes.missile = [
-                this.sampleNESColor(imageData, 52, paletteY),
-                this.sampleNESColor(imageData, 60, paletteY)
+                this.sampleNESColor(imageData, 10, paletteY),  // index 2
+                this.sampleNESColor(imageData, 11, paletteY)   // index 3
             ];
             palettes.varia = [
-                this.sampleNESColor(imageData, 68, paletteY),
-                this.sampleNESColor(imageData, 76, paletteY)
+                this.sampleNESColor(imageData, 14, paletteY),  // index 2
+                this.sampleNESColor(imageData, 15, paletteY)   // index 3
             ];
             palettes.variaMissile = [
-                this.sampleNESColor(imageData, 84, paletteY),
-                this.sampleNESColor(imageData, 92, paletteY)
+                this.sampleNESColor(imageData, 18, paletteY),  // index 2
+                this.sampleNESColor(imageData, 19, paletteY)   // index 3
             ];
         }
 
@@ -154,27 +153,6 @@ export class M1PNGImporter {
         const r = imageData.data[pixelIndex];
         const g = imageData.data[pixelIndex + 1];
         const b = imageData.data[pixelIndex + 2];
-        return this.findClosestNESColor(r, g, b);
-    }
-
-    static findClosestNESColor(r, g, b) {
-        let minDist = Infinity;
-        let closestIndex = 0;
-
-        for (let i = 0; i < 64; i++) {
-            const nesRGB = NESGraphics.nesPaletteToRGB(i);
-            const dist = Math.sqrt(
-                Math.pow(r - nesRGB[0], 2) +
-                Math.pow(g - nesRGB[1], 2) +
-                Math.pow(b - nesRGB[2], 2)
-            );
-
-            if (dist < minDist) {
-                minDist = dist;
-                closestIndex = i;
-            }
-        }
-
-        return closestIndex;
+        return NESGraphics.findClosestNESColor(r, g, b);
     }
 }

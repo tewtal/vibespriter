@@ -1,4 +1,16 @@
 
+// Mesen NTSC palette (matches the emulator default; keep entries unique except reserved blacks)
+const NES_PALETTE = [
+    [102, 102, 102], [0, 42, 136], [20, 18, 167], [59, 0, 164], [92, 0, 126], [110, 0, 64], [108, 6, 0], [86, 29, 0],
+    [51, 53, 0], [11, 72, 0], [0, 82, 0], [0, 79, 10], [0, 64, 77], [0, 0, 0], [0, 0, 0], [0, 0, 0],
+    [173, 173, 173], [21, 95, 217], [66, 64, 255], [117, 39, 254], [160, 26, 204], [183, 30, 123], [181, 49, 32], [153, 78, 0],
+    [107, 109, 0], [56, 135, 0], [11, 148, 0], [0, 143, 50], [0, 124, 141], [0, 0, 0], [0, 0, 0], [0, 0, 0],
+    [255, 254, 255], [100, 176, 255], [146, 144, 255], [198, 118, 255], [243, 106, 255], [255, 110, 204], [255, 129, 112], [234, 158, 34],
+    [188, 190, 0], [136, 216, 0], [92, 228, 48], [69, 224, 130], [72, 206, 222], [79, 79, 79], [0, 0, 0], [0, 0, 0],
+    [255, 254, 255], [192, 223, 255], [211, 210, 255], [232, 200, 255], [255, 194, 255], [255, 196, 234], [255, 201, 201], [255, 215, 168],
+    [255, 230, 158], [226, 240, 144], [203, 246, 111], [184, 248, 184], [179, 255, 240], [169, 169, 169], [0, 0, 0], [0, 0, 0]
+];
+
 export class NESGraphics {
     /**
      * Decodes NES 2bpp planar data into an array of color indices (0-3).
@@ -89,18 +101,39 @@ export class NESGraphics {
 
     /**
      * Converts a standard NES palette byte to RGB.
-     * This is a simplified palette map.
+     * This uses a Nestopia/FBX palette to keep RGB values unique for import/export.
      */
     static nesPaletteToRGB(nesColorByte) {
-        // Basic NES palette mapping (simplified)
-        // Source: http://www.firebrandx.com/nespalette.html (approximate)
-        const palette = [
-            [84, 84, 84], [0, 30, 116], [8, 16, 144], [48, 0, 136], [68, 0, 100], [92, 0, 48], [84, 4, 0], [60, 24, 0], [32, 42, 0], [8, 58, 0], [0, 64, 0], [0, 60, 0], [0, 50, 60], [0, 0, 0], [0, 0, 0], [0, 0, 0],
-            [152, 150, 152], [8, 76, 196], [48, 50, 236], [92, 30, 228], [136, 20, 176], [160, 20, 100], [152, 34, 32], [120, 60, 0], [84, 90, 0], [40, 114, 0], [8, 124, 0], [0, 118, 40], [0, 102, 120], [0, 0, 0], [0, 0, 0], [0, 0, 0],
-            [236, 238, 236], [76, 154, 236], [120, 124, 236], [176, 98, 236], [228, 84, 236], [236, 88, 180], [236, 106, 100], [212, 136, 32], [160, 170, 0], [116, 196, 0], [76, 208, 32], [56, 204, 108], [56, 180, 204], [60, 60, 60], [0, 0, 0], [0, 0, 0],
-            [236, 238, 236], [168, 204, 236], [188, 188, 236], [212, 178, 236], [236, 174, 236], [236, 174, 212], [236, 180, 176], [228, 196, 144], [204, 210, 120], [180, 222, 120], [168, 226, 144], [152, 226, 180], [160, 214, 228], [160, 162, 160], [0, 0, 0], [0, 0, 0]
-        ];
+        return NES_PALETTE[nesColorByte & 0x3F] || [0, 0, 0];
+    }
 
-        return palette[nesColorByte & 0x3F] || [0, 0, 0];
+    /**
+     * Finds the NES palette index that best matches the given RGB color.
+     * Prefers 0x0F for pure black to stabilise palette round-trips.
+     */
+    static findClosestNESColor(r, g, b) {
+        let minDist = Infinity;
+        let bestIdx = 0;
+
+        for (let i = 0; i < NES_PALETTE.length; i++) {
+            const [nr, ng, nb] = NES_PALETTE[i];
+            const dist = (r - nr) ** 2 + (g - ng) ** 2 + (b - nb) ** 2;
+
+            if (dist < minDist) {
+                minDist = dist;
+                bestIdx = i;
+
+                if (dist === 0 && !(r === 0 && g === 0 && b === 0)) {
+                    return bestIdx; // Exact non-black match
+                }
+            }
+        }
+
+        // For black, always prefer the universal background colour slot.
+        if (r === 0 && g === 0 && b === 0) {
+            return 0x0F;
+        }
+
+        return bestIdx;
     }
 }

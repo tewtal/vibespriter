@@ -14,8 +14,8 @@ export async function importFile(file) {
         const width = bitmap.width;
         const height = bitmap.height;
 
-        if (width === 200 && (height === 32 || height === 24)) {
-            // Metroid PNG
+        if (width === 200 && (height === 32 || height === 25 || height === 24)) {
+            // Metroid PNG (32=old with 8x8 palette, 25=new with 1px palette, 24=sprites only)
             const { M1PNGImporter } = await import('./m1-png-importer.js');
             rdc = await M1PNGImporter.parse(file);
         } else {
@@ -37,6 +37,19 @@ export function loadPalettes(block, game) {
     // Add default palette
     palettes.push({ name: 'Default', colors: [...game.defaultPalette] });
 
+    // Find base palette for Metroid (used for 3-color palette padding)
+    let basePalette = null;
+    game.segments.forEach((seg, index) => {
+        if (seg.type === 'palette' && seg.label === 'Base Colors') {
+            let offset = 0;
+            for (let i = 0; i < index; i++) {
+                offset += game.segments[i].length;
+            }
+            const data = block.payload.subarray(offset, offset + seg.length);
+            basePalette = [0x0F, ...data];
+        }
+    });
+
     // Find palette segments
     game.segments.forEach((seg, index) => {
         if (seg.type === 'palette') {
@@ -47,10 +60,15 @@ export function loadPalettes(block, game) {
             const data = block.payload.subarray(offset, offset + seg.length);
             const colors = [0x0F, ...data];
 
+            // Track if this is a 3-color palette (for linked editing)
+            const is3Color = colors.length === 3;
+
             // Special handling for 3-color palettes (Background + 2 colors)
             // Map to slots 0, 2, 3 (insert padding at slot 1)
-            if (colors.length === 3) {
-                colors.splice(1, 0, 0x0F);
+            if (is3Color) {
+                // Use base palette index 1 if available, otherwise 0x0F
+                const paddingColor = (basePalette && basePalette.length > 1) ? basePalette[1] : 0x0F;
+                colors.splice(1, 0, paddingColor);
             }
 
             // Pad to 4 colors if needed
@@ -59,7 +77,7 @@ export function loadPalettes(block, game) {
             }
             if (colors.length > 4) colors.length = 4;
 
-            palettes.push({ name: seg.label, colors, segmentIndex: index });
+            palettes.push({ name: seg.label, colors, segmentIndex: index, is3Color });
         }
     });
 
@@ -98,7 +116,7 @@ export function exportPNG(state) {
 
 function exportZeldaPNG(state) {
     const width = 160;
-    const height = 24;
+    const height = 17;  // 16px sprites + 1px palette
     const canvas = document.createElement('canvas');
     canvas.width = width;
     canvas.height = height;
@@ -152,7 +170,7 @@ function exportZeldaPNG(state) {
         offset += seg.length;
     });
 
-    // Draw Palettes (Row 16-23)
+    // Draw Palettes (Row 16, single pixels)
     const palettesToDraw = [basePalette, l2Palette, l3Palette, tunicPalette];
     let palX = 0;
     const palY = 16;
@@ -161,8 +179,8 @@ function exportZeldaPNG(state) {
         pal.forEach(colorIdx => {
             const rgb = NESGraphics.nesPaletteToRGB(colorIdx);
             ctx.fillStyle = `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`;
-            ctx.fillRect(palX, palY, 8, 8);
-            palX += 8;
+            ctx.fillRect(palX, palY, 1, 1);  // Single pixel
+            palX += 1;
         });
     });
 
@@ -171,7 +189,7 @@ function exportZeldaPNG(state) {
 
 function exportMetroidPNG(state) {
     const width = 200;
-    const height = 32;
+    const height = 25;  // 24px sprites + 1px palette
     const canvas = document.createElement('canvas');
     canvas.width = width;
     canvas.height = height;
@@ -238,7 +256,7 @@ function exportMetroidPNG(state) {
         });
     });
 
-    // Draw Palettes (Row 24-31)
+    // Draw Palettes (Row 24, single pixels)
     const palettesToDraw = [basePalette, normalPalette, missilePalette, variaPalette, variaMissilePalette];
     let palX = 0;
     const palY = 24;
@@ -247,8 +265,8 @@ function exportMetroidPNG(state) {
         pal.forEach(colorIdx => {
             const rgb = NESGraphics.nesPaletteToRGB(colorIdx);
             ctx.fillStyle = `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`;
-            ctx.fillRect(palX, palY, 8, 8);
-            palX += 8;
+            ctx.fillRect(palX, palY, 1, 1);  // Single pixel
+            palX += 1;
         });
     });
 

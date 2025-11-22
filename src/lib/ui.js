@@ -77,6 +77,34 @@ export function initUI(state, canvas, ctx) {
                         paletteInfo.colors[state.selectedColorIndex] = nesColorIndex;
                     }
                 }
+
+                // Handle linked editing of index 1 color
+                const isBaseColors = paletteInfo.name === 'Base Colors';
+                const is3ColorPalette = paletteInfo.is3Color;
+
+                // If editing index 1 of Base Colors or a 3-color palette, sync across all
+                if (state.selectedColorIndex === 1 && (isBaseColors || is3ColorPalette)) {
+                    // Update Base Colors palette if editing from a 3-color palette
+                    if (is3ColorPalette) {
+                        const baseColorsPalette = state.loadedPalettes.find(p => p.name === 'Base Colors');
+                        if (baseColorsPalette && baseColorsPalette.segmentIndex !== undefined) {
+                            let baseOffset = 0;
+                            for (let i = 0; i < baseColorsPalette.segmentIndex; i++) {
+                                baseOffset += state.currentGame.segments[i].length;
+                            }
+                            // Update Base Colors palette data (index 1 maps to byte 0 in the palette data)
+                            state.currentBlock.payload[baseOffset] = nesColorIndex;
+                            baseColorsPalette.colors[1] = nesColorIndex;
+                        }
+                    }
+
+                    // Update all 3-color palettes (whether editing from Base Colors or another 3-color palette)
+                    state.loadedPalettes.forEach(pal => {
+                        if (pal.is3Color && pal !== paletteInfo) {
+                            pal.colors[1] = nesColorIndex;
+                        }
+                    });
+                }
             }
         }
 
@@ -260,11 +288,18 @@ export function initUI(state, canvas, ctx) {
         try {
             const rdc = await importFile(file);
             console.log('Parsed RDC:', rdc);
-            loadRDC(rdc);
+
+            // For PNG imports, always use the default (PNG) layout instead of any saved layout
+            const forceDefaultLayout = file.name.toLowerCase().endsWith('.png');
+
+            loadRDC(rdc, forceDefaultLayout);
             statusText.textContent = `Loaded ${file.name} by ${rdc.author}`;
         } catch (err) {
             console.error(err);
             alert('Failed to load file: ' + err.message);
+        } finally {
+            // Reset input so importing the same file again still triggers change
+            e.target.value = '';
         }
     });
 
@@ -340,9 +375,13 @@ export function initUI(state, canvas, ctx) {
         const dataUrl = exportPNG(state);
         if (!dataUrl) return;
 
+        // Determine filename based on game type
+        const gamePrefix = state.currentBlock.type === BLOCK_TYPES.ZELDA1_SPRITE ? 'z1' : 'm1';
+        const filename = `${gamePrefix}_sprite_sheet.png`;
+
         const a = document.createElement('a');
         a.href = dataUrl;
-        a.download = 'z1_sprite_sheet.png';
+        a.download = filename;
         a.click();
     });
 

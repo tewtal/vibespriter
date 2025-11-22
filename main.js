@@ -21,7 +21,7 @@ document.querySelector('#app').innerHTML = `
           <option value="samus">Samus (Metroid 1)</option>
         </select>
         <input type="file" id="file-input" accept=".rdc,.asset,.png" style="display: none;" />
-        <input type="file" id="patch-input" accept=".nes,.zip" style="display: none;" />
+        <input type="file" id="patch-input" accept=".smc,.sfc" style="display: none;" />
       </div>
     </div>
   </header>

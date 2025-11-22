@@ -18,13 +18,13 @@ export class Z1PNGImporter {
         let palettes = [];
         let colorMap = new Map(); // "r,g,b,a" -> nesIndex (0-3) for the sprite decoding
 
-        if (canvas.height === 24) {
+        if (canvas.height === 17 || canvas.height === 24) {
             // Extract Palettes from bottom row
             const paletteBytes = [];
-            const y = 20; // Center of bottom row (16 + 4)
+            const y = (canvas.height === 17) ? 16 : 20; // Palette row (16 for 1px format, 20 for 8x8 format)
 
             for (let i = 0; i < 16; i++) {
-                const x = i * 8 + 4; // Center of each 8x8 block
+                const x = (canvas.height === 17) ? i : (i * 8 + 4); // Single pixel vs 8x8 block center
                 const idx = (y * canvas.width + x) * 4;
                 const r = imageData.data[idx];
                 const g = imageData.data[idx + 1];
@@ -34,7 +34,7 @@ export class Z1PNGImporter {
                 const key = `${r},${g},${b},${a}`;
 
                 // Find NES Color
-                const nesIndex = this.findClosestNESColor(r, g, b);
+                const nesIndex = NESGraphics.findClosestNESColor(r, g, b);
                 paletteBytes.push(nesIndex);
 
                 // If this is the first palette (i < 4), add to colorMap for sprite decoding
@@ -52,7 +52,7 @@ export class Z1PNGImporter {
 
         } else {
             if (canvas.height !== 16) {
-                console.warn(`Unexpected PNG height: ${canvas.height}. Expected 16 or 24.`);
+                console.warn(`Unexpected PNG height: ${canvas.height}. Expected 16, 17, or 24.`);
             }
             // Legacy Smart Mapping
             const smart = this.extractSmartColorMap(imageData);
@@ -143,7 +143,7 @@ export class Z1PNGImporter {
 
         top3.forEach((key, i) => {
             const [r, g, b] = key.split(',').map(Number);
-            const nesIndex = this.findClosestNESColor(r, g, b);
+            const nesIndex = NESGraphics.findClosestNESColor(r, g, b);
             paletteBytes.push(nesIndex);
             colorMap.set(key, i + 1); // Map to 1, 2, 3
         });
@@ -184,22 +184,6 @@ export class Z1PNGImporter {
         }
 
         return { colorMap, paletteBytes };
-    }
-
-    static findClosestNESColor(r, g, b) {
-        let minDist = Infinity;
-        let bestIdx = 0x0F;
-
-        // Iterate all 64 NES colors
-        for (let i = 0; i < 64; i++) {
-            const [nr, ng, nb] = NESGraphics.nesPaletteToRGB(i);
-            const dist = (r - nr) ** 2 + (g - ng) ** 2 + (b - nb) ** 2;
-            if (dist < minDist) {
-                minDist = dist;
-                bestIdx = i;
-            }
-        }
-        return bestIdx;
     }
 
     static extractTilePixels(imageData, x, y, colorMap) {
