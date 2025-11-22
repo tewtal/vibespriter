@@ -1,0 +1,325 @@
+:root {
+    --bg-color: #121212;
+    --panel-bg: #1e1e1e;
+    --text-color: #e0e0e0;
+    --text-muted: #a0a0a0;
+    --accent-color: #3a7bd5;
+    --accent-hover: #4a8be5;
+    --border-color: #333;
+    --input-bg: #2a2a2a;
+    --success-color: #4caf50;
+}
+
+body {
+    margin: 0;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    font-size: 14px;
+}
+
+#app {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+header {
+    background-color: var(--panel-bg);
+    padding: 0.75rem 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border-color);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    z-index: 10;
+}
+
+h1 {
+    margin: 0;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background-color 0.2s, transform 0.1s;
+    font-size: 0.9rem;
+}
+
+button:hover {
+    background-color: var(--accent-hover);
+}
+
+button:active {
+    transform: translateY(1px);
+}
+
+/* Tools & Toolbar */
+.toolbar {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+}
+
+.tools {
+    display: flex;
+    background-color: var(--input-bg);
+    border-radius: 6px;
+    padding: 2px;
+    border: 1px solid var(--border-color);
+}
+
+.tool-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    padding: 0.4rem 1rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.tool-btn:hover {
+    color: var(--text-color);
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+.tool-btn.active {
+    background-color: var(--accent-color);
+    color: white;
+}
+
+.toolbar-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.toolbar-actions button {
+    background-color: var(--input-bg);
+    border: 1px solid var(--border-color);
+    color: var(--text-color);
+    padding: 0.4rem 0.8rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.85rem;
+}
+
+.toolbar-actions button:hover {
+    background-color: var(--border-color);
+}
+
+main {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+}
+
+.sidebar {
+    width: 320px;
+    background-color: var(--panel-bg);
+    border-right: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    padding: 1.5rem;
+    gap: 1.5rem;
+    overflow-y: auto;
+}
+
+.panel {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.panel h2 {
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+    margin: 0;
+    font-weight: 600;
+}
+
+.control-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.control-group label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.9rem;
+}
+
+.button-group {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.button-group button {
+    flex: 1;
+    background-color: var(--input-bg);
+    border: 1px solid var(--border-color);
+    color: var(--text-color);
+    padding: 0.4rem;
+}
+
+/* Grids */
+.palette-grid,
+.system-palette-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 4px;
+}
+
+.system-palette-grid {
+    grid-template-columns: repeat(8, 1fr);
+}
+
+.palette-swatch,
+.system-swatch {
+    aspect-ratio: 1;
+    border-radius: 4px;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: transform 0.1s, border-color 0.1s;
+}
+
+.system-swatch:hover {
+    transform: scale(1.2);
+    z-index: 2;
+    border-color: white;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.palette-swatch:hover {
+    transform: scale(1.05);
+}
+
+.palette-swatch.active {
+    border-color: white;
+    box-shadow: 0 0 0 2px var(--accent-color);
+    z-index: 1;
+}
+
+/* Layers */
+.layers-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    max-height: 150px;
+    overflow-y: auto;
+    background: var(--input-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 4px;
+}
+
+.layer-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    user-select: none;
+}
+
+.layer-item:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+.layer-item.selected {
+    background-color: var(--accent-color);
+    color: white;
+}
+
+/* Inputs */
+input[type="range"] {
+    width: 100%;
+    height: 4px;
+    background: var(--input-bg);
+    border-radius: 2px;
+    appearance: none;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    background: var(--accent-color);
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid var(--panel-bg);
+}
+
+select {
+    background-color: var(--input-bg);
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+    padding: 0.4rem;
+    border-radius: 4px;
+    width: 100%;
+}
+
+.workspace {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background-color: #0d0d0d;
+    position: relative;
+}
+
+.canvas-container {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: auto;
+    padding: 2rem;
+    background-image: radial-gradient(#222 1px, transparent 1px);
+    background-size: 20px 20px;
+}
+
+canvas {
+    background-color: transparent;
+    image-rendering: pixelated;
+    box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+    border: 1px solid #333;
+}
+
+.status-bar {
+    padding: 0.5rem 1rem;
+    background-color: var(--panel-bg);
+    border-top: 1px solid var(--border-color);
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--bg-color);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
