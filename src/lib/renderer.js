@@ -18,8 +18,29 @@ export function renderWorkspace(canvas, ctx, state) {
         maxY = Math.max(maxY, wsSeg.y + displayHeight);
     });
 
-    canvas.width = Math.max(maxX + 64, 256) * state.canvasScale;
-    canvas.height = Math.max(maxY + 64, 256) * state.canvasScale;
+    const { availableWidth, availableHeight } = getCanvasAvailableSpace(canvas);
+
+    const desiredWidth = Math.max(maxX + 64, 256) * state.canvasScale;
+    const desiredHeight = Math.max(maxY + 64, 256) * state.canvasScale;
+    const minimumContentWidth = Math.max((maxX || 0) + 1, 1) * state.canvasScale;
+    const minimumContentHeight = Math.max((maxY || 0) + 1, 1) * state.canvasScale;
+
+    // Clamp size to available viewport space when possible (keep zoom scale intact, but allow margins to shrink).
+    const boundedWidth = Number.isFinite(availableWidth) && availableWidth > 0 && availableWidth < desiredWidth
+        ? Math.max(minimumContentWidth, availableWidth)
+        : desiredWidth;
+
+    const boundedHeight = Number.isFinite(availableHeight) && availableHeight > 0 && availableHeight < desiredHeight
+        ? Math.max(minimumContentHeight, availableHeight)
+        : desiredHeight;
+
+    // Only apply when size meaningfully changes to avoid rapid reflows/jitter from minor measurements.
+    if (Math.abs(canvas.width - boundedWidth) >= 0.5) {
+        canvas.width = boundedWidth;
+    }
+    if (Math.abs(canvas.height - boundedHeight) >= 0.5) {
+        canvas.height = boundedHeight;
+    }
     ctx.imageSmoothingEnabled = false;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -145,4 +166,21 @@ export function drawGrid(ctx, width, height, scale) {
         ctx.lineTo(width * scale, y * scale);
         ctx.stroke();
     }
+}
+
+function getCanvasAvailableSpace(canvas) {
+    const container = canvas?.parentElement;
+    if (!container) return { availableWidth: Infinity, availableHeight: Infinity };
+
+    const computed = getComputedStyle(container);
+    const paddingX = (parseFloat(computed.paddingLeft) || 0) + (parseFloat(computed.paddingRight) || 0);
+    const paddingY = (parseFloat(computed.paddingTop) || 0) + (parseFloat(computed.paddingBottom) || 0);
+
+    const rect = container.getBoundingClientRect();
+
+    return {
+        // Use the container box size (independent of scrollbar appearance) to prevent oscillation.
+        availableWidth: Math.max(rect.width - paddingX, 0),
+        availableHeight: Math.max(rect.height - paddingY, 0)
+    };
 }

@@ -165,6 +165,16 @@ export function initUI(state, canvas, ctx) {
         renderWorkspace(canvas, ctx, state);
     }
 
+    function getWorkspaceCoords(e) {
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width > 0 ? canvas.width / rect.width : 1;
+        const scaleY = canvas.height > 0 ? canvas.height / rect.height : 1;
+        return {
+            x: ((e.clientX - rect.left) * scaleX) / state.canvasScale,
+            y: ((e.clientY - rect.top) * scaleY) / state.canvasScale
+        };
+    }
+
     function populateLayersList() {
         layersList.innerHTML = '';
         state.workspaceSegments.forEach((wsSeg, wsIndex) => {
@@ -527,9 +537,7 @@ export function initUI(state, canvas, ctx) {
 
     // Canvas interactions
     canvas.addEventListener('mousedown', (e) => {
-        const rect = canvas.getBoundingClientRect();
-        const x = (e.clientX - rect.left) / state.canvasScale;
-        const y = (e.clientY - rect.top) / state.canvasScale;
+        const { x, y } = getWorkspaceCoords(e);
 
         let clickedSegmentId = -1;
         for (let i = state.workspaceSegments.length - 1; i >= 0; i--) {
@@ -593,9 +601,7 @@ export function initUI(state, canvas, ctx) {
     });
 
     canvas.addEventListener('mousemove', (e) => {
-        const rect = canvas.getBoundingClientRect();
-        const x = (e.clientX - rect.left) / state.canvasScale;
-        const y = (e.clientY - rect.top) / state.canvasScale;
+        const { x, y } = getWorkspaceCoords(e);
 
         if (state.isDragging && state.editMode === 'layout') {
             const dx = x - state.dragStartX;

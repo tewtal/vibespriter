@@ -283,10 +283,14 @@ select {
     flex-direction: column;
     background-color: #0d0d0d;
     position: relative;
+    min-height: 0; /* Allow the canvas area to shrink with the viewport */
+    min-width: 0;  /* Prevent wide content from shrinking the sidebar */
 }
 
 .canvas-container {
     flex: 1;
+    min-height: 0; /* Prevent large canvases from forcing the layout to overflow */
+    min-width: 0;  /* Let horizontal overflow scroll instead of pushing layout */
     display: flex;
     justify-content: center;
     align-items: center;

@@ -158,8 +158,10 @@ export function saveLayout(state) {
 
 export function handleDraw(e, canvas, state) {
     const rect = canvas.getBoundingClientRect();
-    const x = (e.clientX - rect.left) / state.canvasScale;
-    const y = (e.clientY - rect.top) / state.canvasScale;
+    const scaleX = canvas.width > 0 ? canvas.width / rect.width : 1;
+    const scaleY = canvas.height > 0 ? canvas.height / rect.height : 1;
+    const x = ((e.clientX - rect.left) * scaleX) / state.canvasScale;
+    const y = ((e.clientY - rect.top) * scaleY) / state.canvasScale;
 
     let targetSegmentId = -1;
     for (let idx of state.selectedSegmentIndices) {
