@@ -2,6 +2,7 @@ export const state = {
     currentRDC: null,
     currentBlock: null,
     currentGame: null,
+    layoutKey: null, // Used to store/retrieve layout per sprite file/name
     currentPalette: [0x0F, 0x16, 0x27, 0x18], // Default palette indices
     canvasScale: 4,
     isDrawing: false,

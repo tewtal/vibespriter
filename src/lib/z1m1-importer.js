@@ -18,8 +18,7 @@ export class Z1M1Importer {
         if (type.includes("Zelda") || type.includes("LinkAsset")) {
             block = this.parseZelda(doc);
         } else if (type.includes("Metroid")) {
-            // Placeholder for Metroid support
-            throw new Error("Metroid asset import not yet fully implemented.");
+            throw new Error("Metroid asset import is currently disabled (awaiting updated documentation).");
         } else {
             throw new Error("Unknown asset type: " + type);
         }
@@ -85,6 +84,56 @@ export class Z1M1Importer {
         };
     }
 
+    static parseMetroid(doc) {
+        const tiles = Array.from(doc.querySelectorAll("Data > Tiles > Tile"));
+        const normalColors = this.parseColors(doc.querySelector("NormalColors")?.textContent);
+        const normalMslColors = this.parseColors(doc.querySelector("NormalMslColors")?.textContent);
+        const variaColors = this.parseColors(doc.querySelector("VariaColors")?.textContent);
+        const variaMslColors = this.parseColors(doc.querySelector("VariaMslColors")?.textContent);
+
+        // Segment lengths (bytes) for Metroid 1 sprite block (manifest order).
+        // Mirrors DEFAULT_METROID_SEGMENT_LAYOUT (graphics only; palettes appended separately).
+        const segmentLengths = [64, 80, 64, 16, 96, 64, 48, 96, 96, 16, 32, 96, 48, 112, 112, 16, 32, 64];
+
+        const graphicsSize = segmentLengths.reduce((a, b) => a + b, 0);
+        const colorsSize = 3 + 2 + 2 + 2 + 2; // base + normal + missile + varia + varia missile
+        const payload = new Uint8Array(graphicsSize + colorsSize);
+
+        // Process Graphics strictly in manifest order (no layout shuffling)
+        let offset = 0;
+        let tileIndex = 0;
+        for (let seg = 0; seg < segmentLengths.length; seg++) {
+            const segLen = segmentLengths[seg];
+            const numTiles = segLen / 16;
+
+            for (let t = 0; t < numTiles; t++) {
+                const tileStr = tiles[tileIndex] ? tiles[tileIndex].textContent : "";
+                const tileData = this.decodeTileString(tileStr || "");
+                payload.set(tileData, offset);
+                offset += 16;
+                tileIndex++;
+            }
+        }
+
+        // Process Colors
+        const base = this.ensureLength(normalColors || [0x16, 0x19, 0x27], 3);
+        const normal = this.lastTwo(base);
+        const missile = this.lastTwo(normalMslColors || base);
+        const varia = this.lastTwo(variaColors || base);
+        const variaMissile = this.lastTwo(variaMslColors || varia);
+
+        payload.set(base, offset); offset += 3;
+        payload.set(normal, offset); offset += 2;
+        payload.set(missile, offset); offset += 2;
+        payload.set(varia, offset); offset += 2;
+        payload.set(variaMissile, offset); offset += 2;
+
+        return {
+            type: BLOCK_TYPES.METROID1_SPRITE,
+            payload: payload
+        };
+    }
+
     static decodeTileString(str) {
         // String is 64 chars of '0','1','2','3'
         // Convert to 64 integers
@@ -106,5 +155,21 @@ export class Z1M1Importer {
         // "41 39 23" -> decimal values
         const parts = str.trim().split(/\s+/);
         return parts.map(p => parseInt(p, 10));
+    }
+
+    static ensureLength(arr, len) {
+        const res = Array.from(arr || []);
+        while (res.length < len) res.push(0x0F);
+        if (res.length > len) res.length = len;
+        return res;
+    }
+
+    static lastTwo(arr) {
+        const res = Array.from(arr || []);
+        if (res.length >= 2) {
+            return res.slice(res.length - 2);
+        }
+        while (res.length < 2) res.push(0x0F);
+        return res.slice(-2);
     }
 }

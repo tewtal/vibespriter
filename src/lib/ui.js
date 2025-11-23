@@ -24,6 +24,7 @@ export function initUI(state, canvas, ctx) {
     const zoomOutBtn = document.getElementById('zoom-out');
     const zoomLevelSpan = document.getElementById('zoom-level');
     const gridToggle = document.getElementById('grid-toggle');
+    const resetLayoutBtn = document.getElementById('reset-layout-btn');
     const layoutWidthInput = document.getElementById('layout-width');
     const layoutWidthDisplay = document.getElementById('layout-width-display');
     const layoutHeightInput = document.getElementById('layout-height');
@@ -203,7 +204,17 @@ export function initUI(state, canvas, ctx) {
         });
     }
 
-    function loadRDC(rdc, forceDefault = false) {
+    function buildLayoutKey(gameType, fileName, metaTitle) {
+        const namePart = (fileName || metaTitle || 'default')
+            .toString()
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/^-+|-+$/g, '');
+        return `layout_${gameType}_${namePart || 'default'}`;
+    }
+
+    function loadRDC(rdc, options = {}) {
+        const { forceDefault = false, resetIfNoSaved = false, fileName = '' } = options;
         state.currentRDC = rdc;
 
         // Metadata
@@ -239,6 +250,10 @@ export function initUI(state, canvas, ctx) {
         state.currentBlock = block;
         state.currentGame = GAMES[block.type];
 
+        // Determine layout key per sprite/file
+        const metaTitle = metaNameInput?.value?.trim();
+        state.layoutKey = buildLayoutKey(state.currentGame.type, fileName, metaTitle);
+
         // Load Palettes
         state.loadedPalettes = loadPalettes(block, state.currentGame);
 
@@ -251,20 +266,19 @@ export function initUI(state, canvas, ctx) {
             paletteSelect.appendChild(option);
         });
 
-        // For samples, use Base Colors palette; otherwise use Default
-        const selectedPaletteIndex = forceDefault
-            ? (state.loadedPalettes.findIndex(p => p.name === 'Base Colors') !== -1
-                ? state.loadedPalettes.findIndex(p => p.name === 'Base Colors')
-                : 0)
-            : 0;
+        // Prefer Base Colors palette when available
+        const basePaletteIndex = state.loadedPalettes.findIndex(p => p.name === 'Base Colors');
+        const selectedPaletteIndex = basePaletteIndex !== -1 ? basePaletteIndex : 0;
 
         paletteSelect.selectedIndex = selectedPaletteIndex;
 
         // Set current palette based on selection
         state.currentPalette = [...state.loadedPalettes[selectedPaletteIndex].colors];
 
-        // Initialize Workspace
-        initWorkspace(state, forceDefault);
+        // Initialize Workspace (fallback to saved layout for this sprite/file if present)
+        const hasSavedLayout = localStorage.getItem(state.layoutKey);
+        const useDefaultLayout = forceDefault || (resetIfNoSaved && !hasSavedLayout);
+        initWorkspace(state, useDefaultLayout);
 
         // If loading sample, update all segments to use Base Colors palette
         if (forceDefault && selectedPaletteIndex > 0) {
@@ -289,10 +303,14 @@ export function initUI(state, canvas, ctx) {
             const rdc = await importFile(file);
             console.log('Parsed RDC:', rdc);
 
-            // For PNG imports, always use the default (PNG) layout instead of any saved layout
-            const forceDefaultLayout = file.name.toLowerCase().endsWith('.png');
+            const ext = file.name.toLowerCase();
+            const isPng = ext.endsWith('.png');
+            const isRdc = ext.endsWith('.rdc') || ext.endsWith('.asset');
 
-            loadRDC(rdc, forceDefaultLayout);
+            // For imported files, prefer the default layout (PNG layout for sprites) to avoid stale custom layouts.
+            const forceDefaultLayout = isPng || isRdc;
+
+            loadRDC(rdc, { forceDefault: forceDefaultLayout, fileName: file.name });
             statusText.textContent = `Loaded ${file.name} by ${rdc.author}`;
         } catch (err) {
             console.error(err);
@@ -344,7 +362,7 @@ export function initUI(state, canvas, ctx) {
             const rdc = parser.parse();
 
             console.log('Loaded sample RDC:', rdc);
-            loadRDC(rdc, true); // Force default layout for samples
+            loadRDC(rdc, { forceDefault: true, fileName: `${value}.rdc` }); // Force default layout for samples
             statusText.textContent = `Loaded ${value}.rdc by ${rdc.author}`;
         } catch (err) {
             console.error(err);
@@ -498,6 +516,13 @@ export function initUI(state, canvas, ctx) {
     gridToggle.addEventListener('change', (e) => {
         state.showGrid = e.target.checked;
         renderWorkspace(canvas, ctx, state);
+    });
+
+    resetLayoutBtn?.addEventListener('click', () => {
+        initWorkspace(state, true);
+        populateLayersList();
+        updateSelectionUI();
+        saveLayout(state);
     });
 
     // Canvas interactions

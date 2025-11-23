@@ -40,6 +40,9 @@ document.querySelector('#app').innerHTML = `
           <label>Grid: <input type="checkbox" id="grid-toggle" /></label>
         </div>
         <div class="control-group">
+          <button id="reset-layout-btn">Reset Layout</button>
+        </div>
+        <div class="control-group">
           <label>Layout Width: <span id="layout-width-display">8</span></label>
           <input type="range" id="layout-width" value="8" min="1" max="64" />
         </div>
@@ -69,17 +72,19 @@ document.querySelector('#app').innerHTML = `
         <div id="palette-editor" class="palette-grid"></div>
       </div>
       <div class="panel">
-        <h2>Metadata</h2>
-        <div class="control-group">
-          <label>Sprite Name: <input type="text" id="meta-name" placeholder="Link" /></label>
-        </div>
-        <div class="control-group">
-          <label>Author: <input type="text" id="meta-author" placeholder="Unknown" /></label>
-        </div>
-      </div>
-      <div class="panel">
         <h2>System Palette</h2>
         <div id="system-palette" class="system-palette-grid"></div>
+      </div>
+      <div class="panel">
+        <h2>Metadata</h2>
+        <div class="control-group">
+          <label>Sprite Name</label>
+          <input type="text" id="meta-name" placeholder="Link" />
+        </div>
+        <div class="control-group">
+          <label>Author</label>
+          <input type="text" id="meta-author" placeholder="Unknown" />
+        </div>
       </div>
     </div>
     <div class="workspace">

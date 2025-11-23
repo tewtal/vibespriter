@@ -1,12 +1,18 @@
 import { NESGraphics } from './nes_graphics.js';
 import { BLOCK_TYPES } from './rdc.js';
 
+function getLayoutStorageKey(state) {
+    const base = state.layoutKey || `layout_${state.currentGame?.type || 'unknown'}`;
+    return base;
+}
+
 export function initWorkspace(state, forceDefault = false) {
     state.workspaceSegments = [];
     state.selectedSegmentIndices.clear();
 
     // Load saved layout if available (unless forcing default)
-    const savedLayout = forceDefault ? null : localStorage.getItem(`layout_${state.currentGame.type}`);
+    const savedLayoutKey = getLayoutStorageKey(state);
+    const savedLayout = forceDefault ? null : localStorage.getItem(savedLayoutKey);
     let savedConfig = {};
     if (savedLayout) {
         try {
@@ -133,6 +139,7 @@ export function toggleSegmentSelection(wsIndex, state) {
 }
 
 export function saveLayout(state) {
+    const storageKey = getLayoutStorageKey(state);
     const config = {};
     state.workspaceSegments.forEach(wsSeg => {
         config[wsSeg.segmentIndex] = {
@@ -146,7 +153,7 @@ export function saveLayout(state) {
             flipY: wsSeg.flipY
         };
     });
-    localStorage.setItem(`layout_${state.currentGame.type}`, JSON.stringify(config));
+    localStorage.setItem(storageKey, JSON.stringify(config));
 }
 
 export function handleDraw(e, canvas, state) {
